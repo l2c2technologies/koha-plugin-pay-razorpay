@@ -1,0 +1,43 @@
+{
+  "name": "koha-plugin-razorpay",
+  "version": "1.0.0",
+  "description": "Koha OPAC Payment Plugin for RazorPay - Standard Checkout Modal Integration",
+  "main": "gulpfile.js",
+  "scripts": {
+    "build": "gulp build",
+    "release": "gulp release",
+    "test": "echo \"No tests specified\" && exit 0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yourusername/koha-plugin-razorpay.git"
+  },
+  "keywords": [
+    "koha",
+    "koha-plugin",
+    "payment",
+    "razorpay",
+    "opac",
+    "library",
+    "ils",
+    "india"
+  ],
+  "author": "L2C2 Technologies",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/yourusername/koha-plugin-razorpay/issues"
+  },
+  "homepage": "https://github.com/yourusername/koha-plugin-razorpay#readme",
+  "devDependencies": {
+    "gulp": "^4.0.2",
+    "gulp-cli": "^2.3.0",
+    "gulp-zip": "^5.1.0",
+    "gulp-replace": "^1.1.3"
+  },
+  "dependencies": {
+    "node-datetime": "^2.1.2"
+  },
+  "engines": {
+    "node": ">=12.0.0"
+  }
+}
