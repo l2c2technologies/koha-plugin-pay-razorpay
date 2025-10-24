@@ -1,0 +1,323 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "RazorPay Payment Plugin API",
+    "version": "1.0.0",
+    "description": "API endpoints for RazorPay payment processing and webhook handling",
+    "contact": {
+      "name": "L2C2 Technologies",
+      "email": "support@l2c2.in"
+    },
+    "license": {
+      "name": "GPL-3.0",
+      "url": "https://www.gnu.org/licenses/gpl-3.0.html"
+    }
+  },
+  "servers": [
+    {
+      "url": "/api/v1/contrib/razorpay",
+      "description": "RazorPay plugin API base path"
+    }
+  ],
+  "paths": {
+    "/webhook": {
+      "post": {
+        "summary": "RazorPay Webhook Handler",
+        "description": "Receives payment notifications from RazorPay servers. This endpoint handles payment authorized, captured, and failed events.",
+        "operationId": "webhookHandler",
+        "tags": ["Webhook"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "event": {
+                    "type": "string",
+                    "enum": [
+                      "payment.authorized",
+                      "payment.captured",
+                      "payment.failed"
+                    ],
+                    "description": "Type of webhook event"
+                  },
+                  "payload": {
+                    "type": "object",
+                    "properties": {
+                      "payment": {
+                        "type": "object",
+                        "properties": {
+                          "entity": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "description": "RazorPay payment ID"
+                              },
+                              "order_id": {
+                                "type": "string",
+                                "description": "RazorPay order ID"
+                              },
+                              "status": {
+                                "type": "string",
+                                "description": "Payment status"
+                              },
+                              "amount": {
+                                "type": "integer",
+                                "description": "Amount in paise"
+                              },
+                              "method": {
+                                "type": "string",
+                                "description": "Payment method used"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Webhook processed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Webhook processed successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid webhook signature or malformed request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/transaction/{transaction_id}": {
+      "get": {
+        "summary": "Get Transaction Details",
+        "description": "Retrieve complete details of a specific transaction",
+        "operationId": "getTransaction",
+        "tags": ["Transactions"],
+        "parameters": [
+          {
+            "name": "transaction_id",
+            "in": "path",
+            "required": true,
+            "description": "Unique transaction identifier",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transaction details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Transaction"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Transaction not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "CookieAuth": []
+          }
+        ]
+      }
+    },
+    "/pay": {
+      "get": {
+        "summary": "Initiate Payment",
+        "description": "Redirects patron to payment initiation page",
+        "operationId": "initiatePayment",
+        "tags": ["Payment"],
+        "responses": {
+          "302": {
+            "description": "Redirect to payment page"
+          },
+          "401": {
+            "description": "Unauthorized - Patron must be logged in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "CookieAuth": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Transaction": {
+        "type": "object",
+        "properties": {
+          "transaction_id": {
+            "type": "integer",
+            "description": "Unique transaction identifier"
+          },
+          "borrowernumber": {
+            "type": "integer",
+            "description": "Koha patron ID"
+          },
+          "amount_paid": {
+            "type": "number",
+            "format": "decimal",
+            "description": "Amount paid in INR"
+          },
+          "razorpay_order_id": {
+            "type": "string",
+            "description": "RazorPay order ID"
+          },
+          "razorpay_payment_id": {
+            "type": "string",
+            "description": "RazorPay payment ID"
+          },
+          "razorpay_signature": {
+            "type": "string",
+            "description": "Payment signature for verification"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "created",
+              "attempted",
+              "paid",
+              "failed",
+              "refunded",
+              "cancelled"
+            ],
+            "description": "Transaction status"
+          },
+          "payment_method": {
+            "type": "string",
+            "description": "Payment method used (card, upi, netbanking, wallet)"
+          },
+          "accountlines_ids": {
+            "type": "string",
+            "description": "JSON array of Koha accountline IDs"
+          },
+          "error_message": {
+            "type": "string",
+            "nullable": true,
+            "description": "Error message if transaction failed"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Transaction creation timestamp"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Last update timestamp"
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": false
+          },
+          "error": {
+            "type": "string",
+            "description": "Error message"
+          },
+          "error_code": {
+            "type": "string",
+            "description": "Error code for debugging"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "CookieAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "CGISESSID",
+        "description": "Koha session cookie authentication"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Webhook",
+      "description": "Webhook endpoints for RazorPay server-to-server communication"
+    },
+    {
+      "name": "Transactions",
+      "description": "Transaction management and retrieval"
+    },
+    {
+      "name": "Payment",
+      "description": "Payment initiation and processing"
+    }
+  ]
+}
