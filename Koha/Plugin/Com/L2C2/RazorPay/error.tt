@@ -1,0 +1,126 @@
+[% USE raw %]
+[% USE Asset %]
+[% USE AdditionalContents %]
+[% SET OpacNav = AdditionalContents.get( location => "OpacNav", lang => lang, library => logged_in_user.branchcode || default_branch, blocktitle => 0 ) %]
+[% SET OpacNavBottom = AdditionalContents.get( location => "OpacNavBottom", lang => lang, library => logged_in_user.branchcode || default_branch, blocktitle => 0 ) %]
+[% INCLUDE 'doc-head-open.inc' %]
+<title>Payment Error &rsaquo; [% IF ( LibraryNameTitle ) %][% LibraryNameTitle | html %][% ELSE %]Koha online[% END %] catalog</title>
+[% INCLUDE 'doc-head-close.inc' %]
+[% BLOCK cssinclude %]
+    <style>
+        .error-container {
+            text-align: center;
+            padding: 40px 20px;
+            margin: 30px auto;
+            max-width: 600px;
+        }
+        .error-icon {
+            font-size: 80px;
+            color: #dc3545;
+            margin-bottom: 20px;
+        }
+        .error-message {
+            background: #f8d7da;
+            border: 2px solid #dc3545;
+            border-radius: 10px;
+            padding: 30px;
+            margin: 20px 0;
+        }
+        .error-message h2 {
+            color: #721c24;
+            margin-top: 0;
+        }
+        .error-message p {
+            color: #721c24;
+            font-size: 16px;
+        }
+    </style>
+[% END %]
+</head>
+
+[% INCLUDE 'bodytag.inc' bodyid='opac-account' bodyclass='scrollto' %]
+[% INCLUDE 'masthead.inc' %]
+
+<div class="main">
+    <nav id="breadcrumbs" aria-label="Breadcrumb" class="breadcrumbs">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="/cgi-bin/koha/opac-main.pl">Home</a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="/cgi-bin/koha/opac-user.pl">[% INCLUDE 'patron-title.inc' patron = logged_in_user %]</a>
+            </li>
+            <li class="breadcrumb-item active">
+                <a href="#" aria-current="page">Payment Error</a>
+            </li>
+        </ol>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            [% IF ( OpacNav || OpacNavBottom ) %]
+                <div class="col-lg-2">
+                    <div id="navigation">
+                        [% INCLUDE 'navigation.inc' IsPatronPage=1 %]
+                    </div>
+                </div>
+                <div class="col-lg-10 order-first order-md-first order-lg-2">
+            [% ELSE %]
+                <div class="col order-first order-md-first order-lg-2">
+            [% END %]
+
+                <div id="useraccount" class="maincontent">
+                    <div class="error-container">
+                        <div class="error-icon">
+                            <i class="fa fa-exclamation-triangle"></i>
+                        </div>
+
+                        <div class="error-message">
+                            <h2>Payment Error</h2>
+                            <p>[% error_message | html %]</p>
+                        </div>
+
+                        <div style="margin-top: 30px;">
+                            <a href="/cgi-bin/koha/opac-account-pay.pl" class="btn btn-primary">
+                                <i class="fa fa-refresh"></i> Try Again
+                            </a>
+                            <a href="/cgi-bin/koha/opac-account.pl" class="btn btn-default">
+                                <i class="fa fa-user"></i> Back to My Account
+                            </a>
+                        </div>
+
+                        <div style="margin-top: 30px; padding: 20px; background: #d1ecf1; border: 1px solid #bee5eb; border-radius: 5px; text-align: left;">
+                            <h4 style="color: #0c5460; margin-top: 0;">
+                                <i class="fa fa-question-circle"></i> Need Help?
+                            </h4>
+                            <p style="color: #0c5460;">
+                                If you continue to experience issues, please contact the library for assistance.
+                            </p>
+                            <ul style="color: #0c5460;">
+                                <li>Check your internet connection</li>
+                                <li>Try using a different browser</li>
+                                <li>Clear your browser cache and cookies</li>
+                                <li>Contact library staff for support</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            [% IF ( OpacNav || OpacNavBottom ) %]
+                <div class="col-lg-2">
+                    [% IF ( OpacNavBottom ) %]
+                        <div id="navigation">
+                            [% INCLUDE 'navigation.inc' IsPatronPage=1 %]
+                        </div>
+                    [% END %]
+                </div>
+            [% END %]
+
+        </div>
+    </div>
+</div>
+
+[% INCLUDE 'opac-bottom.inc' %]
+[% BLOCK jsinclude %]
+[% END %]
