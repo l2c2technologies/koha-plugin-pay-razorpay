@@ -1,0 +1,290 @@
+[% USE raw %]
+[% USE Asset %]
+[% USE Koha %]
+[% USE KohaDates %]
+[% USE Price %]
+[% USE AdditionalContents %]
+[% SET OpacNav = AdditionalContents.get( location => "OpacNav", lang => lang, library => logged_in_user.branchcode || default_branch, blocktitle => 0 ) %]
+[% SET OpacNavBottom = AdditionalContents.get( location => "OpacNavBottom", lang => lang, library => logged_in_user.branchcode || default_branch, blocktitle => 0 ) %]
+[% INCLUDE 'doc-head-open.inc' %]
+<title>Payment via RazorPay &rsaquo; [% IF ( LibraryNameTitle ) %][% LibraryNameTitle | html %][% ELSE %]Koha online[% END %] catalog</title>
+[% INCLUDE 'doc-head-close.inc' %]
+[% BLOCK cssinclude %]
+    [% Asset.css("css/datatables.css") | $raw %]
+    <style>
+        .payment-summary {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .payment-summary h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .payment-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .payment-row:last-child {
+            border-bottom: none;
+            font-weight: bold;
+            font-size: 1.2em;
+            color: #28a745;
+        }
+        .payment-actions {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .rzp-button {
+            background-color: #528FF0;
+            color: white;
+            padding: 12px 30px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .rzp-button:hover {
+            background-color: #3d7bd4;
+        }
+        .rzp-button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .test-mode-banner {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            color: #856404;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+            text-align: center;
+            font-weight: bold;
+        }
+        .charges-table {
+            margin: 20px 0;
+        }
+        .spinner {
+            display: none;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #528FF0;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+[% END %]
+</head>
+
+[% INCLUDE 'bodytag.inc' bodyid='opac-account' bodyclass='scrollto' %]
+[% INCLUDE 'masthead.inc' %]
+
+<div class="main">
+    <nav id="breadcrumbs" aria-label="Breadcrumb" class="breadcrumbs">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="/cgi-bin/koha/opac-main.pl">Home</a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="/cgi-bin/koha/opac-user.pl">[% INCLUDE 'patron-title.inc' patron = logged_in_user %]</a>
+            </li>
+            <li class="breadcrumb-item active">
+                <a href="#" aria-current="page">Payment via RazorPay</a>
+            </li>
+        </ol>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            [% IF ( OpacNav || OpacNavBottom ) %]
+                <div class="col-lg-2">
+                    <div id="navigation">
+                        [% INCLUDE 'navigation.inc' IsPatronPage=1 %]
+                    </div>
+                </div>
+                <div class="col-lg-10 order-first order-md-first order-lg-2">
+            [% ELSE %]
+                <div class="col order-first order-md-first order-lg-2">
+            [% END %]
+
+                <div id="useraccount" class="maincontent">
+                    <h1>Payment via RazorPay</h1>
+
+                    [% IF test_mode %]
+                    <div class="test-mode-banner">
+                        <i class="fa fa-exclamation-triangle"></i> TEST MODE ACTIVE - This is a test transaction. No real money will be charged.
+                    </div>
+                    [% END %]
+
+                    <div class="payment-summary">
+                        <h3>Payment Summary</h3>
+                        
+                        <div class="payment-row">
+                            <span>Patron:</span>
+                            <span><strong>[% patron_name | html %]</strong> ([% cardnumber | html %])</span>
+                        </div>
+
+                        <div class="payment-row">
+                            <span>Total Outstanding:</span>
+                            <span><strong>₹[% total_due %]</strong></span>
+                        </div>
+
+                        <div class="payment-row">
+                            <span>Amount to Pay:</span>
+                            <span class="amount-to-pay"><strong>₹[% payment_amount %]</strong></span>
+                        </div>
+                    </div>
+
+                    <div class="charges-table">
+                        <h4>Charges Being Paid</h4>
+                        <table class="table table-bordered table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Description</th>
+                                    <th>Amount Outstanding</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                [% FOREACH line IN accountlines %]
+                                <tr>
+                                    <td>[% line.date | $KohaDates %]</td>
+                                    <td>[% line.description | html %]</td>
+                                    <td>₹[% line.amountoutstanding | $Price %]</td>
+                                </tr>
+                                [% END %]
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="payment-actions">
+                        <button id="rzp-button" class="rzp-button">
+                            <i class="fa fa-lock"></i> Pay Securely with RazorPay
+                        </button>
+                        <div class="spinner" id="spinner"></div>
+                        <p style="margin-top: 15px;">
+                            <small>You will be redirected to RazorPay's secure payment page</small>
+                        </p>
+                    </div>
+
+                    <div style="margin-top: 30px; text-align: center;">
+                        <a href="/cgi-bin/koha/opac-account.pl" class="btn btn-default">
+                            <i class="fa fa-arrow-left"></i> Back to My Account
+                        </a>
+                    </div>
+
+                    <div style="margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 5px;">
+                        <h4><i class="fa fa-shield"></i> Secure Payment</h4>
+                        <ul style="list-style: none; padding-left: 0;">
+                            <li><i class="fa fa-check text-success"></i> 256-bit SSL encryption</li>
+                            <li><i class="fa fa-check text-success"></i> PCI DSS compliant</li>
+                            <li><i class="fa fa-check text-success"></i> Multiple payment methods supported</li>
+                            <li><i class="fa fa-check text-success"></i> Instant payment confirmation</li>
+                        </ul>
+                    </div>
+
+                </div>
+            </div>
+
+            [% IF ( OpacNav || OpacNavBottom ) %]
+                <div class="col-lg-2">
+                    [% IF ( OpacNavBottom ) %]
+                        <div id="navigation">
+                            [% INCLUDE 'navigation.inc' IsPatronPage=1 %]
+                        </div>
+                    [% END %]
+                </div>
+            [% END %]
+
+        </div>
+    </div>
+</div>
+
+<!-- Load RazorPay Checkout -->
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+<script>
+var razorpayOptions = {
+    "key": "[% razorpay_key_id | html %]",
+    "amount": "[% payment_amount * 100 %]", // Amount in paise
+    "currency": "INR",
+    "name": "[% business_name | html %]",
+    "description": "Library Fines Payment",
+    "image": "[% business_logo | html %]",
+    "order_id": "[% razorpay_order_id | html %]",
+    "handler": function (response) {
+        // Payment successful
+        document.getElementById('spinner').style.display = 'block';
+        document.getElementById('rzp-button').disabled = true;
+        
+        // Redirect to callback with payment details
+        var form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '[% opac_url %]/cgi-bin/koha/opac-account-pay-return.pl';
+        
+        var fields = {
+            'razorpay_payment_id': response.razorpay_payment_id,
+            'razorpay_order_id': response.razorpay_order_id,
+            'razorpay_signature': response.razorpay_signature,
+            'transaction_id': '[% transaction_id %]',
+            'plugin_class': 'Koha::Plugin::Com::L2C2::RazorPay',
+            'plugin_method': 'opac_online_payment_end'
+        };
+        
+        for (var key in fields) {
+            var input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = key;
+            input.value = fields[key];
+            form.appendChild(input);
+        }
+        
+        document.body.appendChild(form);
+        form.submit();
+    },
+    "prefill": {
+        "name": "[% patron_name | html %]",
+        "email": "[% logged_in_user.email | html %]",
+        "contact": "[% logged_in_user.phone | html %]"
+    },
+    "notes": {
+        "borrowernumber": "[% borrowernumber %]",
+        "cardnumber": "[% cardnumber | html %]"
+    },
+    "theme": {
+        "color": "[% theme_color | html %]"
+    },
+    "modal": {
+        "ondismiss": function() {
+            // User closed the modal without paying
+            alert('Payment cancelled. You can try again when ready.');
+        },
+        "escape": false, // Don't allow ESC to close
+        "backdropclose": false // Don't allow clicking backdrop to close
+    }
+};
+
+document.getElementById('rzp-button').addEventListener('click', function(e) {
+    e.preventDefault();
+    var rzp = new Razorpay(razorpayOptions);
+    rzp.open();
+});
+
+// Auto-open modal if coming from direct link (optional)
+// rzp.open();
+</script>
+
+[% INCLUDE 'opac-bottom.inc' %]
+[% BLOCK jsinclude %]
+[% END %]
