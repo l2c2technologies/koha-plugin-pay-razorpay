@@ -1,0 +1,310 @@
+[% USE raw %]
+[% USE Asset %]
+[% USE KohaDates %]
+[% USE Price %]
+[% INCLUDE 'doc-head-open.inc' %]
+<title>RazorPay Transaction Report &rsaquo; Koha</title>
+[% INCLUDE 'doc-head-close.inc' %]
+[% Asset.css("css/datatables.css") | $raw %]
+</head>
+
+<body>
+[% INCLUDE 'header.inc' %]
+[% INCLUDE 'cat-search.inc' %]
+
+<div id="breadcrumbs">
+    <a href="/cgi-bin/koha/mainpage.pl">Home</a> &rsaquo;
+    <a href="/cgi-bin/koha/plugins/plugins-home.pl">Plugins</a> &rsaquo;
+    <a href="/cgi-bin/koha/plugins/run.pl?class=Koha::Plugin::Com::L2C2::RazorPay&method=tool">RazorPay</a> &rsaquo;
+    Transaction Report
+</div>
+
+<div class="main container-fluid">
+    <div class="row">
+        <div class="col-sm-10 col-sm-push-2">
+            <main>
+                <h2>RazorPay Transaction Report</h2>
+
+                <!-- Filter Form -->
+                <form method="get" id="filter-form">
+                    <input type="hidden" name="class" value="Koha::Plugin::Com::L2C2::RazorPay"/>
+                    <input type="hidden" name="method" value="report"/>
+                    
+                    <fieldset class="rows">
+                        <legend>Filter Transactions</legend>
+                        <ol>
+                            <li>
+                                <label for="date_from">Date From:</label>
+                                <input type="date" name="date_from" id="date_from" value="[% date_from | html %]"/>
+                            </li>
+                            <li>
+                                <label for="date_to">Date To:</label>
+                                <input type="date" name="date_to" id="date_to" value="[% date_to | html %]"/>
+                            </li>
+                            <li>
+                                <label for="status">Status:</label>
+                                <select name="status" id="status">
+                                    <option value="">All</option>
+                                    <option value="created" [% IF status == 'created' %]selected[% END %]>Created</option>
+                                    <option value="attempted" [% IF status == 'attempted' %]selected[% END %]>Attempted</option>
+                                    <option value="paid" [% IF status == 'paid' %]selected[% END %]>Paid</option>
+                                    <option value="failed" [% IF status == 'failed' %]selected[% END %]>Failed</option>
+                                    <option value="refunded" [% IF status == 'refunded' %]selected[% END %]>Refunded</option>
+                                    <option value="cancelled" [% IF status == 'cancelled' %]selected[% END %]>Cancelled</option>
+                                </select>
+                            </li>
+                            <li>
+                                <label for="borrowernumber">Borrower Number:</label>
+                                <input type="text" name="borrowernumber" id="borrowernumber" value="[% borrowernumber | html %]" placeholder="Enter borrower number"/>
+                            </li>
+                        </ol>
+                    </fieldset>
+                    
+                    <fieldset class="action">
+                        <input type="submit" value="Filter Results" class="btn btn-primary"/>
+                        <a href="/cgi-bin/koha/plugins/run.pl?class=Koha::Plugin::Com::L2C2::RazorPay&method=report" class="btn btn-default">Clear Filters</a>
+                    </fieldset>
+                </form>
+
+                <hr/>
+
+                <!-- Summary Statistics -->
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="panel panel-default">
+                            <div class="panel-body text-center">
+                                <h3 style="margin: 0; color: #28a745;">
+                                    [% SET total_paid = 0 %]
+                                    [% FOREACH t IN transactions %]
+                                        [% IF t.status == 'paid' %]
+                                            [% total_paid = total_paid + t.amount_paid %]
+                                        [% END %]
+                                    [% END %]
+                                    ₹[% total_paid | $Price %]
+                                </h3>
+                                <p>Total Paid</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="panel panel-default">
+                            <div class="panel-body text-center">
+                                <h3 style="margin: 0; color: #007bff;">
+                                    [% SET paid_count = 0 %]
+                                    [% FOREACH t IN transactions %]
+                                        [% IF t.status == 'paid' %]
+                                            [% paid_count = paid_count + 1 %]
+                                        [% END %]
+                                    [% END %]
+                                    [% paid_count %]
+                                </h3>
+                                <p>Successful Transactions</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="panel panel-default">
+                            <div class="panel-body text-center">
+                                <h3 style="margin: 0; color: #dc3545;">
+                                    [% SET failed_count = 0 %]
+                                    [% FOREACH t IN transactions %]
+                                        [% IF t.status == 'failed' %]
+                                            [% failed_count = failed_count + 1 %]
+                                        [% END %]
+                                    [% END %]
+                                    [% failed_count %]
+                                </h3>
+                                <p>Failed Transactions</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="panel panel-default">
+                            <div class="panel-body text-center">
+                                <h3 style="margin: 0; color: #6c757d;">
+                                    [% transactions.size %]
+                                </h3>
+                                <p>Total Transactions</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Transactions Table -->
+                <table id="transactions-table" class="table table-bordered table-striped">
+                    <thead>
+                        <tr>
+                            <th>Transaction ID</th>
+                            <th>Date</th>
+                            <th>Patron</th>
+                            <th>Card Number</th>
+                            <th>Amount</th>
+                            <th>Payment Method</th>
+                            <th>RazorPay Payment ID</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        [% FOREACH t IN transactions %]
+                        <tr>
+                            <td>[% t.transaction_id %]</td>
+                            <td data-order="[% t.created_at %]">[% t.created_at | $KohaDates with_hours => 1 %]</td>
+                            <td>
+                                [% IF t.patron_name %]
+                                    <a href="/cgi-bin/koha/members/moremember.pl?borrowernumber=[% t.borrowernumber %]">
+                                        [% t.patron_name | html %]
+                                    </a>
+                                [% ELSE %]
+                                    Unknown
+                                [% END %]
+                            </td>
+                            <td>[% t.cardnumber | html %]</td>
+                            <td data-order="[% t.amount_paid %]">₹[% t.amount_paid | $Price %]</td>
+                            <td>
+                                [% IF t.payment_method %]
+                                    [% t.payment_method | html | upper %]
+                                [% ELSE %]
+                                    -
+                                [% END %]
+                            </td>
+                            <td>
+                                [% IF t.razorpay_payment_id %]
+                                    <small>[% t.razorpay_payment_id | html %]</small>
+                                [% ELSE %]
+                                    -
+                                [% END %]
+                            </td>
+                            <td>
+                                [% IF t.status == 'paid' %]
+                                    <span class="label label-success">PAID</span>
+                                [% ELSIF t.status == 'failed' %]
+                                    <span class="label label-danger">FAILED</span>
+                                [% ELSIF t.status == 'refunded' %]
+                                    <span class="label label-warning">REFUNDED</span>
+                                [% ELSIF t.status == 'cancelled' %]
+                                    <span class="label label-default">CANCELLED</span>
+                                [% ELSIF t.status == 'attempted' %]
+                                    <span class="label label-info">ATTEMPTED</span>
+                                [% ELSE %]
+                                    <span class="label label-default">[% t.status | upper | html %]</span>
+                                [% END %]
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <button type="button" class="btn btn-sm btn-default" onclick="viewDetails([% t.transaction_id %])">
+                                        <i class="fa fa-eye"></i> View
+                                    </button>
+                                    [% IF t.status == 'paid' %]
+                                    <button type="button" class="btn btn-sm btn-info" onclick="viewReceipt([% t.transaction_id %])">
+                                        <i class="fa fa-file-pdf-o"></i> Receipt
+                                    </button>
+                                    [% END %]
+                                </div>
+                            </td>
+                        </tr>
+                        [% END %]
+                    </tbody>
+                </table>
+
+                <!-- Export Options -->
+                <div style="margin-top: 20px;">
+                    <button type="button" class="btn btn-default" onclick="exportToCSV()">
+                        <i class="fa fa-download"></i> Export to CSV
+                    </button>
+                    <button type="button" class="btn btn-default" onclick="window.print()">
+                        <i class="fa fa-print"></i> Print Report
+                    </button>
+                </div>
+
+            </main>
+        </div>
+
+        <div class="col-sm-2 col-sm-pull-10">
+            <aside>
+                [% INCLUDE 'tools-menu.inc' %]
+            </aside>
+        </div>
+    </div>
+</div>
+
+<!-- Transaction Details Modal -->
+<div class="modal fade" id="transactionModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title">Transaction Details</h4>
+            </div>
+            <div class="modal-body" id="transaction-details">
+                <p>Loading...</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+[% Asset.js("js/datatables.js") | $raw %]
+<script>
+$(document).ready(function() {
+    $('#transactions-table').DataTable({
+        "order": [[ 1, "desc" ]], // Sort by date descending
+        "pageLength": 25,
+        "lengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+        "dom": 'lBfrtip',
+        "buttons": [
+            'copy', 'csv', 'excel', 'pdf', 'print'
+        ],
+        "columnDefs": [
+            { "orderable": false, "targets": -1 } // Disable sorting on Actions column
+        ]
+    });
+});
+
+function viewDetails(transactionId) {
+    $('#transaction-details').html('<p>Loading transaction details...</p>');
+    $('#transactionModal').modal('show');
+    
+    // AJAX call to fetch transaction details
+    $.ajax({
+        url: '/api/v1/contrib/razorpay/transaction/' + transactionId,
+        type: 'GET',
+        success: function(data) {
+            var html = '<dl class="dl-horizontal">';
+            html += '<dt>Transaction ID:</dt><dd>' + data.transaction_id + '</dd>';
+            html += '<dt>Borrower Number:</dt><dd>' + data.borrowernumber + '</dd>';
+            html += '<dt>Amount:</dt><dd>₹' + parseFloat(data.amount_paid).toFixed(2) + '</dd>';
+            html += '<dt>RazorPay Order ID:</dt><dd>' + (data.razorpay_order_id || '-') + '</dd>';
+            html += '<dt>RazorPay Payment ID:</dt><dd>' + (data.razorpay_payment_id || '-') + '</dd>';
+            html += '<dt>Payment Method:</dt><dd>' + (data.payment_method || '-') + '</dd>';
+            html += '<dt>Status:</dt><dd>' + data.status + '</dd>';
+            html += '<dt>Created:</dt><dd>' + data.created_at + '</dd>';
+            html += '<dt>Updated:</dt><dd>' + data.updated_at + '</dd>';
+            if (data.error_message) {
+                html += '<dt>Error:</dt><dd style="color: red;">' + data.error_message + '</dd>';
+            }
+            html += '</dl>';
+            
+            $('#transaction-details').html(html);
+        },
+        error: function() {
+            $('#transaction-details').html('<p class="text-danger">Failed to load transaction details.</p>');
+        }
+    });
+}
+
+function viewReceipt(transactionId) {
+    window.open('/cgi-bin/koha/plugins/run.pl?class=Koha::Plugin::Com::L2C2::RazorPay&method=download_receipt&transaction_id=' + transactionId, '_blank');
+}
+
+function exportToCSV() {
+    var table = $('#transactions-table').DataTable();
+    table.button('.buttons-csv').trigger();
+}
+</script>
+
+[% INCLUDE 'intranet-bottom.inc' %]
