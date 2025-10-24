@@ -1,0 +1,273 @@
+[% USE raw %]
+[% USE Asset %]
+[% USE KohaDates %]
+[% INCLUDE 'doc-head-open.inc' %]
+<title>RazorPay Payment Plugin &rsaquo; Configuration</title>
+[% INCLUDE 'doc-head-close.inc' %]
+</head>
+
+<body>
+[% INCLUDE 'header.inc' %]
+[% INCLUDE 'cat-search.inc' %]
+
+<div id="breadcrumbs"><a href="/cgi-bin/koha/mainpage.pl">Home</a> &rsaquo; 
+    <a href="/cgi-bin/koha/plugins/plugins-home.pl">Plugins</a> &rsaquo; 
+    RazorPay Payment Plugin &rsaquo; Configuration
+</div>
+
+<div class="main container-fluid">
+    <div class="row">
+        <div class="col-sm-10 col-sm-push-2">
+            <main>
+                <h2>RazorPay Payment Plugin - Configuration</h2>
+                
+                <form method="post">
+                    <input type="hidden" name="class" value="[% CLASS | html %]"/>
+                    <input type="hidden" name="method" value="[% METHOD | html %]"/>
+                    <input type="hidden" name="save" value="1"/>
+                    
+                    <!-- Enable/Disable Plugin -->
+                    <fieldset class="rows">
+                        <legend>General Settings</legend>
+                        <ol>
+                            <li>
+                                <label for="enable_opac_payments">Enable OPAC Payments:</label>
+                                <select name="enable_opac_payments" id="enable_opac_payments">
+                                    <option value="0" [% IF enable_opac_payments == '0' %]selected[% END %]>Disabled</option>
+                                    <option value="1" [% IF enable_opac_payments == '1' %]selected[% END %]>Enabled</option>
+                                </select>
+                                <span class="hint">Enable or disable online payments via RazorPay</span>
+                            </li>
+                            <li>
+                                <label for="test_mode">Test Mode:</label>
+                                <select name="test_mode" id="test_mode">
+                                    <option value="0" [% IF test_mode == '0' %]selected[% END %]>Live Mode</option>
+                                    <option value="1" [% IF test_mode == '1' %]selected[% END %]>Test Mode</option>
+                                </select>
+                                <span class="hint">Use test credentials for testing, live credentials for production</span>
+                            </li>
+                        </ol>
+                    </fieldset>
+
+                    <!-- Test Mode Credentials -->
+                    <fieldset class="rows">
+                        <legend>Test Mode Credentials</legend>
+                        <ol>
+                            <li>
+                                <label for="test_key_id">Test Key ID:</label>
+                                <input type="text" name="test_key_id" id="test_key_id" size="50" value="[% test_key_id | html %]"/>
+                                <span class="hint">Your RazorPay Test Key ID (starts with rzp_test_)</span>
+                            </li>
+                            <li>
+                                <label for="test_key_secret">Test Key Secret:</label>
+                                <input type="password" name="test_key_secret" id="test_key_secret" size="50" value="[% test_key_secret | html %]"/>
+                                <span class="hint">Your RazorPay Test Key Secret</span>
+                            </li>
+                            <li>
+                                <label for="test_webhook_secret">Test Webhook Secret:</label>
+                                <input type="password" name="test_webhook_secret" id="test_webhook_secret" size="50" value="[% test_webhook_secret | html %]"/>
+                                <span class="hint">Your RazorPay Test Webhook Secret (optional)</span>
+                            </li>
+                        </ol>
+                    </fieldset>
+
+                    <!-- Live Mode Credentials -->
+                    <fieldset class="rows">
+                        <legend>Live Mode Credentials</legend>
+                        <ol>
+                            <li>
+                                <label for="live_key_id">Live Key ID:</label>
+                                <input type="text" name="live_key_id" id="live_key_id" size="50" value="[% live_key_id | html %]"/>
+                                <span class="hint">Your RazorPay Live Key ID (starts with rzp_live_)</span>
+                            </li>
+                            <li>
+                                <label for="live_key_secret">Live Key Secret:</label>
+                                <input type="password" name="live_key_secret" id="live_key_secret" size="50" value="[% live_key_secret | html %]"/>
+                                <span class="hint">Your RazorPay Live Key Secret</span>
+                            </li>
+                            <li>
+                                <label for="live_webhook_secret">Live Webhook Secret:</label>
+                                <input type="password" name="live_webhook_secret" id="live_webhook_secret" size="50" value="[% live_webhook_secret | html %]"/>
+                                <span class="hint">Your RazorPay Live Webhook Secret (optional)</span>
+                            </li>
+                        </ol>
+                    </fieldset>
+
+                    <!-- Payment Settings -->
+                    <fieldset class="rows">
+                        <legend>Payment Settings</legend>
+                        <ol>
+                            <li>
+                                <label for="min_payment_amount">Minimum Payment Amount (₹):</label>
+                                <input type="number" step="0.01" min="1" name="min_payment_amount" id="min_payment_amount" value="[% min_payment_amount | html %]"/>
+                                <span class="hint">Minimum payment amount in INR (default: 1.00)</span>
+                            </li>
+                            <li>
+                                <label for="max_payment_amount">Maximum Payment Amount (₹):</label>
+                                <input type="number" step="0.01" min="0" name="max_payment_amount" id="max_payment_amount" value="[% max_payment_amount | html %]"/>
+                                <span class="hint">Maximum payment amount in INR (leave empty for no limit)</span>
+                            </li>
+                            <li>
+                                <label for="enable_partial_payment">Enable Partial Payments:</label>
+                                <select name="enable_partial_payment" id="enable_partial_payment">
+                                    <option value="0" [% IF enable_partial_payment == '0' %]selected[% END %]>Disabled</option>
+                                    <option value="1" [% IF enable_partial_payment == '1' %]selected[% END %]>Enabled</option>
+                                </select>
+                                <span class="hint">Allow patrons to make partial payments</span>
+                            </li>
+                            <li id="partial_settings" [% UNLESS enable_partial_payment == '1' %]style="display:none;"[% END %]>
+                                <label for="partial_payment_type">Partial Payment Type:</label>
+                                <select name="partial_payment_type" id="partial_payment_type">
+                                    <option value="percentage" [% IF partial_payment_type == 'percentage' %]selected[% END %]>Percentage</option>
+                                    <option value="amount" [% IF partial_payment_type == 'amount' %]selected[% END %]>Fixed Amount</option>
+                                </select>
+                                <span class="hint">Set minimum partial payment as percentage or fixed amount</span>
+                            </li>
+                            <li id="partial_value" [% UNLESS enable_partial_payment == '1' %]style="display:none;"[% END %]>
+                                <label for="partial_payment_value">Partial Payment Value:</label>
+                                <input type="number" step="0.01" min="0" name="partial_payment_value" id="partial_payment_value" value="[% partial_payment_value | html %]"/>
+                                <span class="hint">Minimum partial payment (% or ₹ based on type above)</span>
+                            </li>
+                        </ol>
+                    </fieldset>
+
+                    <!-- Branding Settings -->
+                    <fieldset class="rows">
+                        <legend>Branding & Display Settings</legend>
+                        <ol>
+                            <li>
+                                <label for="business_name">Business Name:</label>
+                                <input type="text" name="business_name" id="business_name" size="50" value="[% business_name | html %]"/>
+                                <span class="hint">Your library name (shown on payment modal)</span>
+                            </li>
+                            <li>
+                                <label for="business_logo">Business Logo URL:</label>
+                                <input type="text" name="business_logo" id="business_logo" size="50" value="[% business_logo | html %]"/>
+                                <span class="hint">URL to your library logo (shown on payment modal)</span>
+                            </li>
+                            <li>
+                                <label for="theme_color">Theme Color:</label>
+                                <input type="color" name="theme_color" id="theme_color" value="[% theme_color | html %]"/>
+                                <span class="hint">Color theme for payment modal (default: #528FF0)</span>
+                            </li>
+                        </ol>
+                    </fieldset>
+
+                    <!-- Email & Notifications -->
+                    <fieldset class="rows">
+                        <legend>Email & Notifications</legend>
+                        <ol>
+                            <li>
+                                <label for="enable_custom_receipt">Send Custom Receipt Email:</label>
+                                <select name="enable_custom_receipt" id="enable_custom_receipt">
+                                    <option value="0" [% IF enable_custom_receipt == '0' %]selected[% END %]>Disabled</option>
+                                    <option value="1" [% IF enable_custom_receipt == '1' %]selected[% END %]>Enabled</option>
+                                </select>
+                                <span class="hint">Send additional receipt email (Koha's ACCOUNT_PAYMENT notice will still be sent)</span>
+                            </li>
+                            <li id="receipt_from" [% UNLESS enable_custom_receipt == '1' %]style="display:none;"[% END %]>
+                                <label for="receipt_email_from">Receipt Email From:</label>
+                                <input type="email" name="receipt_email_from" id="receipt_email_from" size="50" value="[% receipt_email_from | html %]"/>
+                                <span class="hint">Email address for sending receipts</span>
+                            </li>
+                        </ol>
+                    </fieldset>
+
+                    <!-- GST & Compliance -->
+                    <fieldset class="rows">
+                        <legend>GST & Compliance Settings</legend>
+                        <ol>
+                            <li>
+                                <label for="enable_gst">Enable GST Reporting:</label>
+                                <select name="enable_gst" id="enable_gst">
+                                    <option value="0" [% IF enable_gst == '0' %]selected[% END %]>Disabled</option>
+                                    <option value="1" [% IF enable_gst == '1' %]selected[% END %]>Enabled</option>
+                                </select>
+                                <span class="hint">Include GST information in receipts and reports</span>
+                            </li>
+                            <li id="gstin_field" [% UNLESS enable_gst == '1' %]style="display:none;"[% END %]>
+                                <label for="gstin">GSTIN Number:</label>
+                                <input type="text" name="gstin" id="gstin" size="50" value="[% gstin | html %]"/>
+                                <span class="hint">Your library's GSTIN number</span>
+                            </li>
+                            <li>
+                                <label for="enable_institutional_reporting">Enable Institutional Reporting:</label>
+                                <select name="enable_institutional_reporting" id="enable_institutional_reporting">
+                                    <option value="0" [% IF enable_institutional_reporting == '0' %]selected[% END %]>Disabled</option>
+                                    <option value="1" [% IF enable_institutional_reporting == '1' %]selected[% END %]>Enabled</option>
+                                </select>
+                                <span class="hint">Add additional reporting fields for institutional requirements</span>
+                            </li>
+                        </ol>
+                    </fieldset>
+
+                    <fieldset class="action">
+                        <input type="submit" value="Save Configuration" />
+                        <a class="cancel" href="/cgi-bin/koha/plugins/plugins-home.pl">Cancel</a>
+                    </fieldset>
+                </form>
+
+                <hr/>
+                
+                <div class="alert alert-info">
+                    <h4>Webhook Configuration</h4>
+                    <p>To enable automatic payment verification via webhooks, configure the following URL in your RazorPay Dashboard:</p>
+                    <code>[% opac_url | html %]/api/v1/contrib/razorpay/webhook</code>
+                    <p><strong>Note:</strong> Make sure to set the webhook secret in the credentials section above.</p>
+                </div>
+
+                <div class="alert alert-warning">
+                    <h4>Important Notes</h4>
+                    <ul>
+                        <li>Always test payments in Test Mode before going live</li>
+                        <li>RazorPay charges transaction fees - refer to their pricing</li>
+                        <li>Ensure your Koha installation uses HTTPS for secure payments</li>
+                        <li>Currency is fixed to INR (Indian Rupees)</li>
+                        <li>Transactions are logged in the <code>rzp_transactions</code> table</li>
+                        <li>Errors are logged in the <code>rzp_error_logs</code> table</li>
+                    </ul>
+                </div>
+
+            </main>
+        </div>
+
+        <div class="col-sm-2 col-sm-pull-10">
+            <aside>
+                [% INCLUDE 'tools-menu.inc' %]
+            </aside>
+        </div>
+    </div>
+</div>
+
+<script>
+$(document).ready(function() {
+    // Show/hide partial payment fields
+    $('#enable_partial_payment').change(function() {
+        if ($(this).val() == '1') {
+            $('#partial_settings, #partial_value').show();
+        } else {
+            $('#partial_settings, #partial_value').hide();
+        }
+    });
+
+    // Show/hide custom receipt email field
+    $('#enable_custom_receipt').change(function() {
+        if ($(this).val() == '1') {
+            $('#receipt_from').show();
+        } else {
+            $('#receipt_from').hide();
+        }
+    });
+
+    // Show/hide GSTIN field
+    $('#enable_gst').change(function() {
+        if ($(this).val() == '1') {
+            $('#gstin_field').show();
+        } else {
+            $('#gstin_field').hide();
+        }
+    });
+});
+</script>
+
+[% INCLUDE 'intranet-bottom.inc' %]
