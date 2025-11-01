@@ -25,6 +25,7 @@
                     <input type="hidden" name="class" value="[% CLASS | html %]"/>
                     <input type="hidden" name="method" value="[% METHOD | html %]"/>
                     <input type="hidden" name="save" value="1"/>
+                    <input type="hidden" name="csrf_token" value="[% csrf_token | html %]"/>
                     
                     <!-- Enable/Disable Plugin -->
                     <fieldset class="rows">
