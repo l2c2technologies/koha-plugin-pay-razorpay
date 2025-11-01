@@ -22,6 +22,7 @@
   "paths": {
     "/webhook": {
       "post": {
+        "x-mojo-to": "Com::L2C2::RazorPay::Controller#webhook_handler",
         "summary": "RazorPay Webhook Handler",
         "description": "Receives payment notifications from RazorPay servers. This endpoint handles payment authorized, captured, and failed events.",
         "operationId": "webhookHandler",
@@ -129,6 +130,7 @@
     },
     "/transaction/{transaction_id}": {
       "get": {
+        "x-mojo-to": "Com::L2C2::RazorPay::Controller#get_transaction",
         "summary": "Get Transaction Details",
         "description": "Retrieve complete details of a specific transaction",
         "operationId": "getTransaction",
@@ -185,6 +187,7 @@
     },
     "/pay": {
       "get": {
+        "x-mojo-to": "Com::L2C2::RazorPay::Controller#redirect_to_payment",
         "summary": "Initiate Payment",
         "description": "Redirects patron to payment initiation page",
         "operationId": "initiatePayment",
